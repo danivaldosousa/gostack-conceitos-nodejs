@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { uuid } = require("uuidv4");
+const { uuid, isUuid }  = require("uuidv4");
 
 const app = express();
 
@@ -9,10 +9,16 @@ app.use(cors());
 
 const repositories = [];
 
-app.get("/", (request, response) => {
-  // const repositories = request.query;
-  
- });
+function validateRepositoryId(request, response, next){
+  const { id } = request.params;
+
+  if( !isUuid(id) ){
+    return response.status(400).json({ error: 'Invalid Repository ID.' });
+  }
+  return next();
+}
+
+app.use("/repositories/:id", validateRepositoryId);
 
 app.get("/repositories", (request, response) => {
  
@@ -23,7 +29,7 @@ app.get("/repositories", (request, response) => {
 app.post("/repositories", (request, response) => {
     
     const { title, url, techs } = request.body;
-    const repository = {id: uuid(), title, url, techs, like: 0};
+    const repository = {id: uuid(), title, url, techs, likes: 0};
     repositories.push(repository);
     return response.json(repository); 
 });
@@ -36,14 +42,14 @@ app.put("/repositories/:id", (request, response) => {
     if (repositoryIndex < 0){
       return response.status(400).json({error: 'Repository not found.'});
     }
-    const like = repositories[repositoryIndex].like;
+    const like = repositories[repositoryIndex].likes;
    
     const repository = {
       id,
       title,
       url,
       techs,
-      like,
+      likes,
     };
     repositories[repositoryIndex] = repository;
 
@@ -69,15 +75,15 @@ app.delete("/repositories/:id", (request, response) => {
 
 app.post("/repositories/:id/like", (request, response) => {
       const { id } = request.params;
-     
+      
       const repositoryIndex = repositories.findIndex(repository => repository.id == id);
      
       if (repositoryIndex < 0){
         return response.status(400).json({error: 'Repository not found.'});
       }
      
-    const intLike = repositories[repositoryIndex].like;
-    repositories[repositoryIndex].like = (intLike +1);
+    const intLike = repositories[repositoryIndex].likes;
+    repositories[repositoryIndex].likes = (intLike + 1);
      
      const repository = repositories[repositoryIndex];
      
